@@ -19,7 +19,8 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "GROQ_API_KEY", "\"${System.getenv(\"GROQ_API_KEY\") ?: \"\"")")
+        val groqApiKey = System.getenv("GROQ_API_KEY") ?: ""
+        buildConfigField("String", "GROQ_API_KEY", "\"$groqApiKey\"")
         buildConfigField("String", "GROQ_BASE_URL", "\"https://api.groq.com/openai/v1/\"")
     }
 
@@ -54,7 +55,7 @@ android {
     }
 
     lint {
-        disable += "UnusedResources"
+        disable.add("UnusedResources")
     }
 }
 
