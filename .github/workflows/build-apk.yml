@@ -29,19 +29,19 @@ jobs:
       with:
         gradle-version: 8.4
 
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+
     - name: Create local.properties
       run: |
         echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+        echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> local.properties
+
+    - name: Run tests
+      run: ./gradlew test
 
     - name: Build Debug APK
-      env:
-        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      run: gradle assembleDebug
-
-    - name: Build Release APK
-      env:
-        GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-      run: gradle assembleRelease
+      run: ./gradlew assembleDebug
 
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
@@ -49,16 +49,6 @@ jobs:
         name: debug-apk
         path: app/build/outputs/apk/debug/*.apk
         retention-days: 7
-
-    - name: Upload Release APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: release-apk
-        path: app/build/outputs/apk/release/*.apk
-        retention-days: 7
-
-    - name: Run tests
-      run: gradle test
 
   lint:
     runs-on: ubuntu-latest
@@ -81,12 +71,16 @@ jobs:
       with:
         gradle-version: 8.4
 
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+
     - name: Create local.properties
       run: |
         echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+        echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> local.properties
 
     - name: Run lint
-      run: gradle lint
+      run: ./gradlew lint
 
     - name: Upload lint report
       uses: actions/upload-artifact@v4
