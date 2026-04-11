@@ -1,0 +1,58 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Local configuration
+local.properties
+keystore.properties
+
+# Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+.navigation/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+*.apk
+*.aar
+*.ap_
+*.aab
+output.json
+
+# Signing files
+*.jks
+*.keystore
+*.p12
+*.key
+
+# Log files
+*.log
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# Dependencies
+node_modules/
+
+# Secrets (never commit these)
+secrets/
+*.secret
+api-keys.properties
+
+# OS
+*.tmp
+*.temp
