@@ -2,6 +2,11 @@ package com.nammaspendai.di
 
 import android.content.Context
 import com.nammaspendai.data.local.NammaSpendDatabase
+import com.nammaspendai.data.repository.CategoryRepository
+import com.nammaspendai.data.repository.TransactionRepository
+import com.nammaspendai.util.PredictionEngine
+import com.nammaspendai.util.SecurityManager
+import com.nammaspendai.util.SmsImporter
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -30,4 +35,21 @@ object AppModule {
     @Provides
     @Singleton
     fun provideUsageRecordDao(database: NammaSpendDatabase) = database.usageRecordDao()
+
+    @Provides
+    @Singleton
+    fun providePredictionEngine(): PredictionEngine = PredictionEngine()
+
+    @Provides
+    @Singleton
+    fun provideSecurityManager(@ApplicationContext context: Context): SecurityManager =
+        SecurityManager(context)
+
+    @Provides
+    @Singleton
+    fun provideSmsImporter(
+        @ApplicationContext context: Context,
+        transactionRepository: TransactionRepository,
+        categoryRepository: CategoryRepository
+    ): SmsImporter = SmsImporter(context, transactionRepository, categoryRepository)
 }

@@ -5,14 +5,18 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nammaspendai.data.repository.TransactionRepository
+import com.nammaspendai.util.PredictionEngine
+import com.nammaspendai.util.PredictionResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import javax.inject.Inject
 
 @HiltViewModel
 class InsightsViewModel @Inject constructor(
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val predictionEngine: PredictionEngine
 ) : ViewModel() {
 
     private val _monthlyData = MutableLiveData<List<MonthlyChartData>>()
@@ -24,8 +28,23 @@ class InsightsViewModel @Inject constructor(
     private val _topCategories = MutableLiveData<List<CategorySpending>>()
     val topCategories: LiveData<List<CategorySpending>> = _topCategories
 
+    private val _predictions = MutableLiveData<List<PredictionResult>>()
+    val predictions: LiveData<List<PredictionResult>> = _predictions
+
+    private val _electricityPrediction = MutableLiveData<PredictionResult?>()
+    val electricityPrediction: LiveData<PredictionResult?> = _electricityPrediction
+
+    private val _lpgPrediction = MutableLiveData<PredictionResult?>()
+    val lpgPrediction: LiveData<PredictionResult?> = _lpgPrediction
+
+    private val _spendingTrend = MutableLiveData<Double>(0.0)
+    val spendingTrend: LiveData<Double> = _spendingTrend
+
     private val _isLoading = MutableLiveData<Boolean>(false)
     val isLoading: LiveData<Boolean> = _isLoading
+
+    private val _error = MutableLiveData<String?>()
+    val error: LiveData<String?> = _error
 
     init {
         loadInsights()
@@ -35,75 +54,57 @@ class InsightsViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                // Load monthly trends
-                val monthlyTotals = transactionRepository.getMonthlyTotals()
-                _monthlyData.value = monthlyTotals.map {
-                    MonthlyChartData(
-                        month = it.month,
-                        expenses = it.expenses,
-                        income = it.income
-                    )
-                }
-
-                // Load current month category breakdown
                 val now = LocalDateTime.now()
                 val startOfMonth = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0)
                 val endOfMonth = now.withDayOfMonth(now.toLocalDate().lengthOfMonth())
                     .withHour(23).withMinute(59).withSecond(59)
 
+                // Monthly trends
+                val monthlyTotals = transactionRepository.getMonthlyTotals()
+                _monthlyData.value = monthlyTotals.map {
+                    MonthlyChartData(month = it.month, expenses = it.expenses, income = it.income)
+                }
+
+                // Category totals
                 val categoryTotals = transactionRepository.getCategoryTotals(startOfMonth, endOfMonth)
+                val totalSpending = categoryTotals.sumOf { it.total }
+
                 _categoryData.value = categoryTotals.map {
                     CategoryChartData(
                         category = it.category,
                         amount = it.total,
-                        percentage = 0f // Calculated below
+                        percentage = if (totalSpending > 0) (it.total / totalSpending * 100).toFloat() else 0f
                     )
                 }
 
-                // Calculate percentages and top categories
-                val totalSpending = categoryTotals.sumOf { it.total }
-                if (totalSpending > 0) {
-                    _categoryData.value = categoryTotals.map {
-                        CategoryChartData(
+                _topCategories.value = categoryTotals
+                    .sortedByDescending { it.total }
+                    .take(5)
+                    .map {
+                        CategorySpending(
                             category = it.category,
                             amount = it.total,
-                            percentage = (it.total / totalSpending * 100).toFloat()
+                            percentage = if (totalSpending > 0) (it.total / totalSpending * 100) else 0.0
                         )
                     }
 
-                    _topCategories.value = categoryTotals
-                        .sortedByDescending { it.total }
-                        .take(5)
-                        .map {
-                            CategorySpending(
-                                category = it.category,
-                                amount = it.total,
-                                percentage = (it.total / totalSpending * 100)
-                            )
-                        }
-                }
+                // Predictions
+                val allTransactions = transactionRepository.allTransactions.first()
+                _predictions.value = predictionEngine.predictNextMonth(allTransactions)
+                _electricityPrediction.value = predictionEngine.predictElectricityBill(allTransactions)
+                _lpgPrediction.value = predictionEngine.predictLpgBill(allTransactions)
+                _spendingTrend.value = predictionEngine.getSpendingTrend(allTransactions)
+
             } catch (e: Exception) {
-                // Handle error
+                _error.value = "Failed to load insights: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
         }
     }
 
-    // Prediction methods
-    fun predictElectricityBill(): Double? {
-        // Simple average of last 3-6 months for utilities category
-        return calculateCategoryAverage("Utilities", 6)
-    }
-
-    fun predictLpgBill(): Double? {
-        // Simple average for LPG-related expenses
-        return calculateCategoryAverage("Utilities", 6)
-    }
-
-    private fun calculateCategoryAverage(category: String, months: Int): Double? {
-        // This would require historical data query - simplified for now
-        return null
+    fun clearError() {
+        _error.value = null
     }
 }
 

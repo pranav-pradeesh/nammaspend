@@ -21,28 +21,21 @@ class SettingsFragment : Fragment() {
 
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
-
     private val viewModel: SettingsViewModel by viewModels()
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentSettingsBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         setupObservers()
         setupClickListeners()
     }
 
     private fun setupObservers() {
         viewModel.allTransactions.observe(viewLifecycleOwner) { transactions ->
-            // Enable/disable export buttons based on data availability
             binding.btnExportCsv.isEnabled = transactions.isNotEmpty()
             binding.btnExportExcel.isEnabled = transactions.isNotEmpty()
         }
@@ -57,44 +50,43 @@ class SettingsFragment : Fragment() {
 
         viewModel.isPinSet.observe(viewLifecycleOwner) { isSet ->
             binding.btnSetPin.text = if (isSet) "Change PIN" else "Set PIN"
-            binding.switchBiometric.isEnabled = isSet &&
-                    (viewModel.isBiometricAvailable.value ?: false)
         }
 
         viewModel.exportResult.observe(viewLifecycleOwner) { result ->
             result?.let {
                 when (it) {
-                    is ExportResult.Success -> {
-                        viewModel.shareFile(it.uri, it.mimeType)
-                    }
-                    is ExportResult.Error -> {
-                        Snackbar.make(binding.root, it.message, Snackbar.LENGTH_LONG).show()
-                    }
+                    is ExportResult.Success -> viewModel.shareFile(it.uri, it.mimeType)
+                    is ExportResult.Error -> Snackbar.make(binding.root, it.message, Snackbar.LENGTH_LONG).show()
                 }
                 viewModel.clearExportResult()
             }
         }
+
+        viewModel.smsImportResult.observe(viewLifecycleOwner) { result ->
+            result?.let {
+                val msg = "Imported ${it.imported} transactions (${it.duplicates} duplicates skipped)"
+                Snackbar.make(binding.root, msg, Snackbar.LENGTH_LONG).show()
+                viewModel.clearImportResult()
+            }
+        }
+
+        viewModel.isLoading.observe(viewLifecycleOwner) { loading ->
+            binding.progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+        }
     }
 
     private fun setupClickListeners() {
-        // Export CSV
         binding.btnExportCsv.setOnClickListener {
-            viewModel.allTransactions.value?.let { transactions ->
-                viewModel.exportToCsv(transactions)
-            }
+            viewModel.allTransactions.value?.let { viewModel.exportToCsv(it) }
         }
 
-        // Export Excel
         binding.btnExportExcel.setOnClickListener {
-            viewModel.allTransactions.value?.let { transactions ->
-                viewModel.exportToExcel(transactions)
-            }
+            viewModel.allTransactions.value?.let { viewModel.exportToExcel(it) }
         }
 
-        // Import SMS
         binding.btnImportSms.setOnClickListener {
             if (hasSmsPermission()) {
-                importFromSms()
+                showImportConfirmationDialog()
             } else {
                 requestPermissions(
                     arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS),
@@ -103,44 +95,31 @@ class SettingsFragment : Fragment() {
             }
         }
 
-        // Set PIN
-        binding.btnSetPin.setOnClickListener {
-            showPinDialog()
-        }
+        binding.btnSetPin.setOnClickListener { showPinDialog() }
 
-        // Biometric toggle
         binding.switchBiometric.setOnCheckedChangeListener { _, isChecked ->
             viewModel.setBiometricEnabled(isChecked)
         }
     }
 
-    private fun hasSmsPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            requireContext(), Manifest.permission.READ_SMS
-        ) == PackageManager.PERMISSION_GRANTED
+    private fun showImportConfirmationDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Import SMS Transactions")
+            .setMessage("This will scan your SMS inbox for bank messages and import transactions automatically. Continue?")
+            .setPositiveButton("Import") { _, _ ->
+                viewModel.importFromSms()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
-    private fun importFromSms() {
-        // Show progress dialog
-        val progressDialog = AlertDialog.Builder(requireContext())
-            .setTitle("Importing SMS")
-            .setMessage("Reading messages...")
-            .setCancelable(false)
-            .create()
-
-        progressDialog.show()
-
-        // TODO: Implement SMS import using ContentResolver
-        // This would involve querying Telephony.Sms.CONTENT_URI
-
-        progressDialog.dismiss()
-        Snackbar.make(binding.root, "SMS import started", Snackbar.LENGTH_SHORT).show()
+    private fun hasSmsPermission(): Boolean {
+        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun showPinDialog() {
         val editText = EditText(requireContext()).apply {
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or
-                    android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
             hint = "Enter 4-6 digit PIN"
         }
 
@@ -160,16 +139,12 @@ class SettingsFragment : Fragment() {
             .show()
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == SMS_PERMISSION_CODE && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-            importFromSms()
+            showImportConfirmationDialog()
         } else {
-            Snackbar.make(binding.root, "SMS permission required", Snackbar.LENGTH_LONG).show()
+            Snackbar.make(binding.root, "SMS permission required for import", Snackbar.LENGTH_LONG).show()
         }
     }
 
