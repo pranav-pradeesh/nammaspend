@@ -51,3 +51,20 @@ class MapConverter {
         }
     }
 }
+
+class IntMapConverter {
+    private val gson = Gson()
+
+    @TypeConverter
+    fun fromIntMap(value: MutableMap<Int, Int>?): String? {
+        return value?.let { gson.toJson(it) }
+    }
+
+    @TypeConverter
+    fun toIntMap(value: String?): MutableMap<Int, Int>? {
+        return value?.let {
+            val type = object : TypeToken<MutableMap<Int, Int>>() {}.type
+            gson.fromJson<MutableMap<Int, Int>>(it, type)
+        }
+    }
+}

@@ -14,6 +14,7 @@ import com.nammaspendai.data.model.UsageRecord
 import com.nammaspendai.util.LocalDateTimeConverter
 import com.nammaspendai.util.LocalDateConverter
 import com.nammaspendai.util.MapConverter
+import com.nammaspendai.util.IntMapConverter
 
 @Database(
     entities = [
@@ -27,7 +28,8 @@ import com.nammaspendai.util.MapConverter
 @TypeConverters(
     LocalDateTimeConverter::class,
     LocalDateConverter::class,
-    MapConverter::class
+    MapConverter::class,
+    IntMapConverter::class
 )
 abstract class NammaSpendDatabase : RoomDatabase() {
 
