@@ -24,8 +24,8 @@ class AddExpenseViewModel @Inject constructor(
     private val groqClient: GroqClient
 ) : AndroidViewModel(application) {
 
-    private val _voiceResult = MutableLiveData<VoiceResult>()
-    val voiceResult: LiveData<VoiceResult> = _voiceResult
+    private val _voiceResult = MutableLiveData<VoiceResult?>()
+    val voiceResult: LiveData<VoiceResult?> = _voiceResult
 
     private val _isProcessing = MutableLiveData<Boolean>(false)
     val isProcessing: LiveData<Boolean> = _isProcessing
