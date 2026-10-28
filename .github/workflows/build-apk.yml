@@ -7,6 +7,8 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# The Ubuntu runner image ships an Android SDK (ANDROID_HOME), so there is no
+# separate SDK setup step; Gradle comes from the project's wrapper.
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,20 +23,15 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: 8.4
 
     - name: Make gradlew executable
       run: chmod +x ./gradlew
 
     - name: Create local.properties
       run: |
-        echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+        echo "sdk.dir=$ANDROID_HOME" > local.properties
         echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> local.properties
 
     - name: Run tests
@@ -63,20 +60,15 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: 8.4
 
     - name: Make gradlew executable
       run: chmod +x ./gradlew
 
     - name: Create local.properties
       run: |
-        echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+        echo "sdk.dir=$ANDROID_HOME" > local.properties
         echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}" >> local.properties
 
     - name: Run lint
