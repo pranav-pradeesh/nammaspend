@@ -30,10 +30,10 @@ object SmsParser {
 
     // Amount patterns - supports various formats
     private val AMOUNT_PATTERNS = listOf(
-        Pattern.compile("(?i)(?:inr|rs\.?|₹)\\s*([\\d,]+(?:\\.\\d{1,2})?)", Pattern.CASE_INSENSITIVE),
+        Pattern.compile("(?i)(?:inr|rs\\.?|₹)\\s*([\\d,]+(?:\\.\\d{1,2})?)", Pattern.CASE_INSENSITIVE),
         Pattern.compile("(?i)(?:amount|amt)\\s*(?:of|is)?\\s*[:\\s]*([\\d,]+(?:\\.\\d{1,2})?)", Pattern.CASE_INSENSITIVE),
         Pattern.compile("(?i)(?:₹|inr|rs)\\s*([\\d,]+(?:\\.\\d{1,2})?)"),
-        Pattern.compile("(?i)([\\d,]+(?:\\.\\d{1,2})?)\\s*(?:inr|rs\.?|₹)", Pattern.CASE_INSENSITIVE)
+        Pattern.compile("(?i)([\\d,]+(?:\\.\\d{1,2})?)\\s*(?:inr|rs\\.?|₹)", Pattern.CASE_INSENSITIVE)
     )
 
     // Transaction type patterns

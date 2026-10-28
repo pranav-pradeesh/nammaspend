@@ -110,7 +110,7 @@ class ExportManager(private val context: Context) {
                     // Date cell with formatting
                     row.createCell(0).apply {
                         setCellValue(transaction.timestamp.toString())
-                        cellStyle = dateStyle
+                        setCellStyle(dateStyle)
                     }
 
                     row.createCell(1).setCellValue(transaction.type.name)

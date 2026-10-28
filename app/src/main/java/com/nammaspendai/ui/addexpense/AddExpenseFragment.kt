@@ -1,5 +1,6 @@
 package com.nammaspendai.ui.addexpense
 
+import android.content.Intent
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -106,8 +107,7 @@ class AddExpenseFragment : Fragment() {
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
         }
 
-        val intent = RecognizerIntent().apply {
-            action = RecognizerIntent.ACTION_RECOGNIZE_SPEECH
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
             putExtra(RecognizerIntent.EXTRA_PROMPT, "Describe your expense...")
